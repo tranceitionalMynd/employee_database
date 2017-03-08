@@ -1,4 +1,5 @@
 var React = require('react');
+var Sidebar = require('./partials/sidebar');
 
 class HelloMessage extends React.Component {
   render() {
@@ -7,12 +8,3 @@ class HelloMessage extends React.Component {
 }
 
 module.exports = HelloMessage;
-
-//<html>
-//<head>
-//  <% include partials/head.ejs %>
-//</head>
-//<body>
-//  <p>Hello world!</p>
-//</body>
-//</html>
