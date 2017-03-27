@@ -11,8 +11,7 @@
     </div>
   </table>
 <!-- <script src='js/react.js'></script> -->
-<script src="https://unpkg.com/react@15/dist/react-with-addons.js"></script>
-<script src='js/react-dom.js'></script>
+<script src='https://unpkg.com/react@15/dist/react-with-addons.js'></script>
 <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css'>
 <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap-theme.min.css'>
 <script src='https://cdnjs.cloudflare.com/ajax/libs/react-bootstrap/0.30.8/react-bootstrap.min.js'></script>
@@ -56,7 +55,7 @@ function PageError(error) {
 
 function Employee() {
   for (index in serverFields) {
-    this[serverFields[index]] = "";
+    this[serverFields[index]] = '';
   }
 }
 
@@ -122,7 +121,7 @@ var EmployeeTable = React.createClass({
      .then((response) => response.json())
      .then(function(response) {
       if (!response || !response['status']) {
-        _this.setState({error: new PageError({message: "No response received from server."})});
+        _this.setState({error: new PageError({message: 'No response received from server.'})});
         return;
       }
       _this.refreshEmployees()
@@ -191,7 +190,7 @@ var EmployeeTable = React.createClass({
     for (index in serverFields) {
       field = serverFields[index];
       if (field != '_id' && !_this.state.employee[field]) {
-        _this.setState({error: new AddEmployeeError(field + " is a required field.")});
+        _this.setState({error: new AddEmployeeError(field + ' is a required field.')});
         return;
       }
     }
@@ -208,7 +207,7 @@ var EmployeeTable = React.createClass({
      .then((response) => response.json())
      .then(function(response) {
       if (!response || !response['status']) {
-        _this.setState({error: new AddEmployeeError("No response received from server.")});
+        _this.setState({error: new AddEmployeeError('No response received from server.')});
         return;
       }
       if (response['status'] != 'ok') {
