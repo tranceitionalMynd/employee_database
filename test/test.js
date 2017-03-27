@@ -2,9 +2,20 @@ const server_app = require('../app');
 const app = server_app.app;
 const assert = require('chai').assert;
 const request = require('supertest');
-const db = require('../db/employee.js');
+const db = require('../db/employee');
 const should = require('chai').should();
 const extend = require('util')._extend;
+const mongoose = require('mongoose');
+const ReactTestUtils = require('react-addons-test-utils');
+const renderer = ReactTestUtils.createRenderer();
+
+const TestEmployee = db.TestEmployee;
+
+var document = new TestEmployee({name: "Permanent", _id: 1, email: "a@hotmail.com", birthDate: new Date(), department: "IT", gender: "male"});
+
+document.save((err) => {
+  ;
+});
 
 describe('database', () => {
 
@@ -15,16 +26,14 @@ describe('database', () => {
     this.george.birthDate = new Date();
     this.george.department = "IT";
     this.george.gender = "male";
-    this.document = new db.Employee({name: this.george.name, email: this.george.email, birthDate: this.george.birthDate, department: this.george.department, gender: this.george.gender});
+    this.document = new TestEmployee({name: this.george.name, email: this.george.email, birthDate: this.george.birthDate, department: this.george.department, gender: this.george.gender});
     this.find = function(criteria, next) {
-      db.Employee.find(criteria, (err, employees) => {
-        next(err, employees);
-      });
+      app.find(TestEmployee, criteria, next);
+      //TestEmployee.find(criteria, next);
     },
     this.document.save(done);
     this.findGeorge = function(done) {
       this.result = Object()
-//      this.find({ name: /^Test George$/ }, (err, employees) => {
       this.find({ _id: this.document._id}, (err, employees) => {
         if (err) { done(err); }
         this.employees = employees;
@@ -35,7 +44,7 @@ describe('database', () => {
       });
     },
     this.deleteGeorge = function(done) {
-      db.Employee.find().remove({ _id: this.document._id}, (err) => {
+      TestEmployee.find().remove({ _id: this.document._id}, (err) => {
         if (err) { 
           raise(err); 
         }
@@ -89,7 +98,7 @@ describe('database', () => {
       this.george2.birthDate.setDate(now.getDate() + 1);
       this.george2.department = "Janitorial";
       this.george2.gender = "Female";
-      db.Employee.where({ _id: this.document._id }).setOptions({multi: true}).update({name: this.george2.name, email: this.george2.email, birthDate: this.george2.birthDate, department: this.george2.department, gender: this.george2.gender}, (err) => {
+      TestEmployee.where({ _id: this.document._id }).setOptions({multi: true}).update({name: this.george2.name, email: this.george2.email, birthDate: this.george2.birthDate, department: this.george2.department, gender: this.george2.gender}, (err) => {
         if (err) { done(err); }
         this.findGeorge(done);
       });
@@ -114,6 +123,26 @@ describe('database', () => {
     it('delete the created employee', (done) => {
       this.deleteGeorge(() => {
         assert.equal(0, this.employees.length);
+        done();
+      });
+    });
+  });
+  describe('GET /employees.json', () => {
+    beforeEach(() => {
+      this.response = request(app).get('/employees.json');
+    });
+    it('responds with json', (done) => {
+      this.response.set('Accept', 'text').expect('Content-Type', /application\/json/).expect(200, done);
+    });
+    it('has name', (done) => {
+      this.response.then((response) => {
+        assert.isOk(response.body.name);
+        done();
+       });
+    });
+    it('has jerky', (done) => {
+      this.response.then((response) => {
+        assert.isOk(response.body.jerky); 
         done();
       });
     });
@@ -149,3 +178,7 @@ describe('assets', () => {
   });
 });
 
+describe('front-end', () => {
+  describe('employees', () => {
+  });
+});

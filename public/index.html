@@ -1,31 +1,344 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <link rel="shortcut icon" href="%PUBLIC_URL%/favicon.ico">
-    <!--
-      Notice the use of %PUBLIC_URL% in the tag above.
-      It will be replaced with the URL of the `public` folder during the build.
-      Only files inside the `public` folder can be referenced from the HTML.
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Employee Database</title>
+</head>
+<body>
+  <table>
+    <div class='container'>
+        <section id='app'>
+        </section>
+    </div>
+  </table>
+<!-- <script src='js/react.js'></script> -->
+<script src="https://unpkg.com/react@15/dist/react-with-addons.js"></script>
+<script src='js/react-dom.js'></script>
+<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap.min.css'>
+<link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/latest/css/bootstrap-theme.min.css'>
+<script src='https://cdnjs.cloudflare.com/ajax/libs/react-bootstrap/0.30.8/react-bootstrap.min.js'></script>
+<script>
 
-      Unlike "/favicon.ico" or "favicon.ico", "%PUBLIC_URL%/favicon.ico" will
-      work correctly both with client-side routing and a non-root public URL.
-      Learn how to configure a non-root public URL by running `npm run build`.
-    -->
-    <title>React App</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <!--
-      This HTML file is a template.
-      If you open it directly in the browser, you will see an empty page.
+var Button = ReactBootstrap.Button;
+var ButtonToolbar = ReactBootstrap.ButtonToolbar;
+var Table = ReactBootstrap.Table;
+var FormGroup = ReactBootstrap.FormGroup;
+var FormControl = ReactBootstrap.FormControl;
 
-      You can add webfonts, meta tags, or analytics to this file.
-      The build step will place the bundled scripts into the <body> tag.
+var headers = [
+  'Name', 'Email', 'Date of Birth', 'Department', 'Gender', 'Age'
+];
 
-      To begin the development, run `npm start`.
-      To create a production bundle, use `npm run build`.
-    -->
-  </body>
+var serverFields = [
+  'name', 'email', 'birthDate', 'department', 'gender', '_id'
+];
+
+var data = [{name: 'a,', email: 'b', birthDate: Date.now(), department: 'd', gender: 'e'}];
+
+function EmployeesError() {
+  this.addEmployee = '';
+  this.updateEmployee = '';
+  this.caption = '';
+}
+
+function AddEmployeeError(message) {  
+  this.addEmployee = message;
+}
+
+function UpdateEmployeeError(message) {
+  EmployeesError.call();
+  this.updateEmployee = message;
+}
+
+function PageError(error) {
+  EmployeesError.call();
+  this.caption = error.message;
+}
+
+function Employee() {
+  for (index in serverFields) {
+    this[serverFields[index]] = "";
+  }
+}
+
+function get_server_key(header) {
+  switch(header) {
+    case 'Date of Birth': return 'birthDate'; break;
+    default: return header.toLowerCase(); break;
+  }
+}
+
+var EmployeeTable = React.createClass({
+
+  getInitialState: function() {
+    //return {employees: [{name: 'a', email: 'b', birthDate: 'c', department: 'd', gender: 'e'}]};
+    return {
+      employees: data,
+      employee: new Employee(),
+      error: new EmployeesError()
+    };
+  },
+
+  componentDidMount: function() {
+    this.refreshEmployees();
+  },
+
+  refreshEmployees() {
+    var _this = this;
+    this.fetch_request = fetch('employees.json')
+     .then((response) => response.json())
+     .then((employees) => {
+       _this.setState({
+         employees: employees,
+         employee: new Employee(),
+         error: new EmployeesError()
+       });
+     })
+     .catch((error) => {
+      _this.setState({
+        employees: data,
+        employee: new Employee(),
+        error: new PageError(error)
+      });
+     });
+  },
+
+  handleEmployeeChange: function(header, event) {
+    var employee = this.state.employee;
+    var key = get_server_key(header);
+    employee[key] = event.target.value;
+    this.setState({employee: employee});
+  },
+
+  deleteEmployee: function(id, event) {
+    _this = this;
+    _this.fetch_request = fetch('delete', {
+      method: 'POST',
+      body: JSON.stringify({ id: id}),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+     .then((response) => response.json())
+     .then(function(response) {
+      if (!response || !response['status']) {
+        _this.setState({error: new PageError({message: "No response received from server."})});
+        return;
+      }
+      _this.refreshEmployees()
+     })
+     .catch(function(error) {
+      _this.setState({error: new PageError(error)})
+     });
+  },
+
+  updateEmployee: function(emp, event) {
+    var employee = Object.create(emp);
+    employee._id = event.target.id;
+    this.setState({employee: employee});
+  },
+
+  updateEmployeeData: function() {
+    var employee = Object.create(this.state.employee);
+    if (!employee._id) {
+      for (var emp in this.state.employees) {
+        if (employee.name == emp.name) {
+          employee._id = emp._id;
+        }
+      }
+      if (!employee._id) {
+        this.setState({error: new UpdateEmployeeError('Can\'t find employee "' + employee.name + '".')});
+        return;
+      }
+      this.setState({employee: employee});
+    }
+    this.saveEmployeeData();
+  },
+
+  renderGetEmployeeValue: function(cell) {
+    if (cell == 'Age') {
+      //if (!this.state.employee.birthDate) {
+      return '';
+      //}
+      //return this.calculateAge(cell);
+    }
+    return this.state.employee[get_server_key(cell)]
+  },
+
+  calculateAge(value) {
+    if (!value) {
+      return '';
+    }
+    value = new Date(value);
+    var ageDifMs = Date.now() - value.getTime();
+    var ageDate = new Date(ageDifMs); // miliseconds from epoch
+    return Math.abs(ageDate.getUTCFullYear() - 1970);
+  },
+
+  renderGetRowValue: function(header, value, employee) {
+    if (header == 'Date of Birth') {
+      value = value.toString()
+      value = value.substring(0, value.indexOf('T'));
+    }
+    else if (header == 'Age') {
+      value = this.calculateAge(employee.birthDate);
+    }
+    return value.toString();
+  },
+
+  saveEmployeeData: function() {
+    var _this = this;
+    for (index in serverFields) {
+      field = serverFields[index];
+      if (field != '_id' && !_this.state.employee[field]) {
+        _this.setState({error: new AddEmployeeError(field + " is a required field.")});
+        return;
+      }
+    }
+    this.fetch_request = fetch('employees.json', {
+      method: 'POST',
+      body: JSON.stringify({
+        employee: _this.state.employee
+      }),
+      headers: {
+        'Accept': 'application/json',
+        'Content-Type': 'application/json',
+      },
+    })
+     .then((response) => response.json())
+     .then(function(response) {
+      if (!response || !response['status']) {
+        _this.setState({error: new AddEmployeeError("No response received from server.")});
+        return;
+      }
+      if (response['status'] != 'ok') {
+        throw new Error(response['error']);
+      }
+      _this.refreshEmployees()
+    })
+     .catch(function(error) {
+      _this.setState({error: new PageError(error)})
+     });
+  },
+
+  render: function() {
+    var _this = this;
+
+    var theader = 
+      React.DOM.thead(null,
+        React.DOM.tr(null,
+          this.props.headers.map(function(title, index) {
+            return React.DOM.th({
+                key: index
+              }, 
+              title);
+          })
+        )
+      );
+
+    var editRow = 
+      React.DOM.tr({key: 'newEmployeeRow'},
+        headers.map(function(cell, index) {
+          if (cell != 'Age') {
+            var cellContent = 
+              React.createElement(FormGroup, null,
+                React.createElement(FormControl, 
+                  {
+                    required: true,
+                    type: 'text',
+                    placeholder: cell,
+                    value: _this.renderGetEmployeeValue(cell),
+                    onChange: _this.handleEmployeeChange.bind(_this, cell)
+                  },
+                  null
+                )
+            )
+          }
+          else {
+            var cellContent = '';
+          }
+
+          return React.DOM.td({key: index}, cellContent);
+        }),
+        React.DOM.td({key: 'addEmployeeCell'},
+          React.createElement(ButtonToolbar, null,
+            React.createElement(Button, {bsStyle: 'success', onClick: _this.saveEmployeeData}, 'Add Employee'),
+            React.addons.createFragment({text: _this.state.error.addEmployee})
+          )
+        ),
+        React.DOM.td({key: 'updateEmployeeCell'},
+          React.createElement(Button, {
+              bsStyle: 'success', 
+              onClick: _this.updateEmployeeData
+            }, 
+            'Update Employee'
+          ),
+          React.addons.createFragment({text: _this.state.error.updateEmployee})
+        )
+      );
+
+    var rows = 
+      _this.state.employees.map(function(employee, index) {
+        var cells = [];
+        var id = employee._id;
+        headers.forEach(function(header) {
+          var key = get_server_key(header);
+          var value = employee[get_server_key(header)];
+          value = _this.renderGetRowValue(header, value, employee);
+          cells.push(React.DOM.td({key: header}, value)); 
+        });
+        cells.push(React.DOM.td({key: 'delete'},
+          React.createElement(ButtonToolbar, null,
+            React.createElement(Button, {
+                bsStyle: 'danger', 
+                onClick: _this.deleteEmployee.bind(_this, id)
+              }, 
+              'Delete Employee'
+            )
+          )
+        ));
+        cells.push(React.DOM.td({key: 'update'},
+          React.createElement(Button, {
+              bsStyle: 'primary', 
+              onClick: _this.updateEmployee.bind(_this, employee),
+              id: id
+            }, 
+            'Update Employee'
+          )
+        ));
+        return (React.DOM.tr({
+            key: index,
+          }, 
+          cells
+        ));
+      });
+
+    var tbody =
+      React.DOM.tbody(null, editRow, rows);
+
+    var caption = React.DOM.caption(null, _this.state.error.caption);
+
+    return (
+      React.createElement(Table, {
+          style: {align: 'center'},
+          hover: true,
+          condensed: true,
+          responsive: true
+        },
+        caption, theader, tbody
+      )
+    );
+  }
+});
+
+ReactDOM.render(
+  React.createElement(EmployeeTable, {
+    headers: headers,
+    employees: data,
+  }),
+  document.getElementById('app')
+);
+
+</script>
+</body>
 </html>
