@@ -1,6 +1,4 @@
 const express = require('express');
-console.log("1");
-console.assert(false);
 const app = express();
 const db = require('./db/employee');
 const port = process.env.PORT || 8000;

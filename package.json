@@ -9,7 +9,8 @@
     "react-bootstrap": "^0.30.8",
     "react-dom": "^15.4.2",
     "react-sidebar": "^2.3.0",
-    "validator": "^7.0.0"
+    "validator": "^7.0.0",
+    "express"
   },
   "devDependencies": {
     "chai": "^3.5.0",
